@@ -27,6 +27,8 @@ class PlayerViewController: UIViewController {
     var didPlay: [Track]!
 
     var paused = true
+    
+    var currSong: URL!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -129,12 +131,29 @@ class PlayerViewController: UIViewController {
      *  property accordingly.
      */
     
-    func playOrPauseTrack(_ sender: UIButton) {
+    func retrieveURL(track: Track) -> URL {
         let path = Bundle.main.path(forResource: "Info", ofType: "plist")
         let clientID = NSDictionary(contentsOfFile: path!)?.value(forKey: "client_id") as! String
         let track = tracks[currentIndex]
         let url = URL(string: "https://api.soundcloud.com/tracks/\(track.id as Int)/stream?client_id=\(clientID)")!
+        return url
+    }
+    
+    func playOrPauseTrack(_ sender: UIButton) {
         // FILL ME IN
+        let url = retrieveURL(track: tracks[currentIndex])
+        if currSong != url {
+            let newSong = AVPlayerItem(url: url)
+            player = AVQueuePlayer(playerItem: newSong)
+        }
+        currSong = url
+        if player.rate > 0 {
+            player.pause()
+            playPauseButton.setImage(UIImage(named: "play")?.withRenderingMode(.alwaysTemplate), for: UIControlState.normal)
+        } else {
+            player.play()
+            playPauseButton.setImage(UIImage(named: "pause")?.withRenderingMode(.alwaysTemplate), for: UIControlState.normal)
+        }
 
     }
 
@@ -146,6 +165,19 @@ class PlayerViewController: UIViewController {
      */
     func nextTrackTapped(_ sender: UIButton) {
         // FILL ME IN
+        if currentIndex + 1 < tracks.count {
+            let prevRate = player.rate
+            currentIndex = currentIndex + 1
+            loadTrackElements()
+            let url = retrieveURL(track: tracks[currentIndex])
+            let nextSong = AVPlayerItem(url: url)
+            player = AVQueuePlayer(playerItem: nextSong)
+            currSong = url
+            if prevRate > 0 {
+                player.play()
+            }
+        }
+        
     }
 
     /*
@@ -160,6 +192,22 @@ class PlayerViewController: UIViewController {
 
     func previousTrackTapped(_ sender: UIButton) {
         // FILL ME IN
+
+        if CMTimeGetSeconds(player.currentTime()) > 3 || currentIndex == 0 {
+            player.seek(to: CMTime(seconds: 0, preferredTimescale: player.currentTime().timescale))
+        } else {
+            let prevRate = player.rate
+            currentIndex = currentIndex - 1
+            loadTrackElements()
+            let url = retrieveURL(track: tracks[currentIndex])
+            let nextSong = AVPlayerItem(url: url)
+            player = AVQueuePlayer(playerItem: nextSong)
+            currSong = url
+            if prevRate > 0 {
+                player.play()
+            }
+        }
+        
     }
 
 
